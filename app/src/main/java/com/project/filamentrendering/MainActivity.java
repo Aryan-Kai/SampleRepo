@@ -15,9 +15,11 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.filament.Engine;
 import com.google.android.filament.Filament;
 import com.google.android.filament.IndirectLight;
+import com.google.android.filament.Scene;
 import com.google.android.filament.Skybox;
 import com.google.android.filament.android.UiHelper;
 import com.google.android.filament.utils.Float3;
+import com.google.android.filament.utils.KTX1Loader;
 import com.google.android.filament.utils.Manipulator;
 import com.google.android.filament.utils.ModelViewer;
 import com.google.android.filament.utils.Utils;
@@ -104,6 +106,36 @@ public class MainActivity extends AppCompatActivity {
         surfaceView.setOnTouchListener(modelViewer);
         uiHelper.setOpaque(false);
         uiHelper.attachTo(surfaceView);
+
+        // Load IBL and Skybox
+        try {
+            AssetManager assetManager = getAssets();
+
+            // Load Indirect Light
+            String iblPath = "envs/venetian_crossroads_2k/venetian_crossroads_2k_ibl.ktx";
+            ByteBuffer iblBuffer = readAsset(iblPath);
+            if (iblBuffer != null) {
+                IndirectLight indirectLight = KTX1Loader.INSTANCE.createIndirectLight(engine, iblBuffer, new KTX1Loader.Options());
+                // Adjust intensity as needed
+                indirectLight.setIntensity(30_000.0f);
+                modelViewer.getScene().setIndirectLight(indirectLight);
+            } else {
+                Log.e(TAG, "Failed to load Indirect Light: " + iblPath);
+            }
+
+            // Load Skybox
+            String skyboxPath = "envs/venetian_crossroads_2k/venetian_crossroads_2k_skybox.ktx";
+            ByteBuffer skyboxBuffer = readAsset(skyboxPath);
+            if (skyboxBuffer != null) {
+                Skybox skybox = KTX1Loader.INSTANCE.createSkybox(engine, skyboxBuffer, new KTX1Loader.Options());
+                modelViewer.getScene().setSkybox(skybox);
+            } else {
+                Log.e(TAG, "Failed to load Skybox: " + skyboxPath);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading IBL/Skybox: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void initFilament() {
